@@ -31,7 +31,6 @@ Paper = False
 if Paper==True:
     matplotlib.use('Agg')
 
-
 # circular velocity at rsun in BabaMW at t=7 Gyr
 rsun = 8.0
 zsun = 0.0
@@ -230,6 +229,21 @@ ransac_i41.fit(X, y)
 line_yi41 = np.linspace(jrrange[0], jrrange[1], npline).reshape(-1,1)
 line_Xi41 = ransac_i41.predict(line_yi41)
 
+# 1:1 or 4:3 resonance, but the ridges does not show up well. 
+mres = 1.0
+lres = 1.0
+indx11 = np.where(np.fabs(mres*(omega_b-omegaphis)-lres*omegars)<domega)
+# print(' np 1:1=', np.shape(indxolr))
+# robust fit
+ransac_11 = linear_model.RANSACRegressor()
+y = lzs[indx11].reshape(-1, 1)
+X = jrs[indx11].reshape(-1, 1)
+ransac_11.fit(X, y)
+# Predict data of estimated models
+line_y11 = np.linspace(jrrange[0], jrrange[1], npline).reshape(-1,1)
+line_X11 = ransac_11.predict(line_y11)
+
+
 # Final plot
 plt.rcParams["font.family"] = "Times New Roman"
 plt.rcParams["mathtext.fontset"] = "stixsans"
@@ -271,10 +285,9 @@ plt.plot(line_X43, line_y43, color='green')
 # plot 4:-1 blue
 # plt.scatter(lzs[indxi41], jrs[indxi41], c='blue', marker='.',s=1)
 plt.plot(line_Xi41, line_yi41, color='blue')
-
-# identify the radial boundary
-# plt.scatter(lzs[rgals>11.995], jrs[rgals>11.995], c='white', marker='.',s=1)
-# plt.scatter(lzs[rgals<4.005], jrs[rgals<4.005], c='black', marker='.',s=1)
+# plot 1:1 grey
+# plt.scatter(lzs[indxi41], jrs[indxi41], c='blue', marker='.',s=1)
+plt.plot(line_X11, line_y11, color='grey')
 
 f.subplots_adjust(left=0.15, bottom = 0.15, hspace=0.0, right = 0.9)
 #cbar_ax1 = f.add_axes([0.8, 0.15, 0.05, 0.725])
@@ -402,6 +415,19 @@ for i in range(njrsamp):
   ax[i].add_patch(
     patches.Rectangle((r43_low, ymin_hist), r43_high-r43_low, \
                       ymax_hist-ymin_hist, facecolor='green', fill=True,alpha=0.5))
+
+  # 1:1
+  lindx = np.where((line_y11>jrsamp_low[i]) & (line_y11<jrsamp_high[i]))
+  r11_low = np.min(line_X11[lindx])
+  r11_high = np.max(line_X11[lindx])
+  if i==0:
+      r11_low0 = r11_low
+      r11_high0 = r11_high
+  print(' lz region for 1:1=', r11_low, r11_high)
+  ax[i].add_patch(
+    patches.Rectangle((r11_low, ymin_hist), r11_high-r11_low, \
+                      ymax_hist-ymin_hist, facecolor='blue', fill=True,alpha=0.5))
+  
 
   # histogram 
   # ax[i].hist(lzs, bins = lz_bins, fc='#AAAAFF', density=True)
@@ -546,6 +572,9 @@ ax1.add_patch(
                       ymax_hist-ymin_hist, facecolor='green', fill=True,alpha=0.5))
 ax1.add_patch(
     patches.Rectangle((ri41_low0, ymin_hist), ri41_high0-ri41_low0, \
+                      ymax_hist-ymin_hist, facecolor='green', fill=True,alpha=0.5))
+ax1.add_patch(
+    patches.Rectangle((r11_low0, ymin_hist), r11_high0-r11_low0, \
                       ymax_hist-ymin_hist, facecolor='green', fill=True,alpha=0.5))
 
 # Lz vs. Jz
