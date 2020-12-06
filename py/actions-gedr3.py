@@ -25,7 +25,10 @@ from sklearn.neighbors import KernelDensity
 # flags
 Rweight = True
 # making eps and jpg file for figure without showing in windows.
-Paper = False
+Paper = True
+#
+OLRloc = 'Sirius'
+# OLRloc = 'Hat'
 
 # for not displaying
 if Paper==True:
@@ -160,10 +163,12 @@ print(' Hmax =', np.max(Hlog))
 
 # compute resonance location in action space
 # bar pattern speed
-# Hat OLR version
-omega_b = 32.0
-# Sirius OLR version. 
-# omega_b = 40.0
+if OLRloc=='Hat':
+    # Hat OLR version
+    omega_b = 32.0
+elif OLRloc=='Sirius':
+    # Sirius OLR version. 
+    omega_b = 40.0
 # Hercules OLR
 # omega_b = 50.0
 # omega range to use to identify resonances. 
@@ -340,9 +345,18 @@ f.subplots_adjust(left=0.15, bottom = 0.15, hspace=0.0, right = 0.9)
 #cb1 = f.colorbar(im1, cax=cbar_ax1)
 #cb1.ax.tick_params(labelsize=16)
 
+plt.grid(True)
 if Paper==True:
-    plt.savefig('lzjr-gedr3.eps')
-    plt.savefig('lzjr-gedr3.jpg')
+    if Rweight==True:
+        if OLRloc=='Hat':
+            plt.savefig('lzjr-gedr3-wRw-olrhat.eps')
+        elif OLRloc=='Sirius':
+            plt.savefig('lzjr-gedr3-wRw-olrsir.eps')            
+    else:
+        if OLRloc=='Hat':
+            plt.savefig('lzjr-gedr3-woRw-olrhat.eps')
+        elif OLRloc=='Sirius':
+            plt.savefig('lzjr-gedr3-woRw-olrsir.eps')            
     plt.close(f)
 else:
     plt.show()
@@ -505,7 +519,16 @@ for i in range(njrsamp):
 plt.xlabel(r"L$_{\rm z}$ (L$_{\rm z,0}$)", fontsize=18)
 
 if Paper==True:
-    plt.savefig('lzhist-gedr3.eps')
+    if Rweight==True:
+        if OLRloc=='Hat':
+            plt.savefig('lzhist-gedr3-wRw-olrhat.eps')
+        else:
+            plt.savefig('lzhist-gedr3-wRw-olrsir.eps')          
+    else:
+        if OLRloc=='Hat':
+            plt.savefig('lzhist-gedr3-woRw-olrhat.eps')
+        else:
+            plt.savefig('lzhist-gedr3-woRw-olrsir.eps')          
     plt.close(f)
 else:
     plt.show()
@@ -667,8 +690,16 @@ f.subplots_adjust(left=0.15, bottom = 0.15, hspace=0.0, right = 0.9)
 
 
 if Paper==True:
-#plt.savefig('lzjz-gedr3.eps')
-    plt.savefig('lzjz-gedr3.jpg')
+    if Rweight==True:
+        if OLRloc=='Hat':
+            plt.savefig('lzjz-gedr3-wRw-olrhat.jpg')
+        elif OLRloc=='Sirius':
+            plt.savefig('lzjz-gedr3-wRw-olrhsir.jpg')
+    else:
+        if OLRloc=='Hat':
+            plt.savefig('lzjz-gedr3-woRw-olrhat.jpg')
+        elif OLRloc=='Sirius':
+            plt.savefig('lzjz-gedr3-woRw-olrhsir.jpg')
     plt.close(f)
 else:
     plt.show()
