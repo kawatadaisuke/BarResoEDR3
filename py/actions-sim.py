@@ -25,7 +25,7 @@ from sklearn.neighbors import KernelDensity
 # flags
 Rweight = True
 # making eps and jpg file for figure without showing in windows.
-Paper = False
+Paper = True
 
 # for not displaying
 if Paper==True:
@@ -295,7 +295,10 @@ f.subplots_adjust(left=0.15, bottom = 0.15, hspace=0.0, right = 0.9)
 #cb1.ax.tick_params(labelsize=16)
 
 if Paper==True:
-    plt.savefig('lzjr-sim.eps')
+    if Rweight==True:
+        plt.savefig('lzjr-sim-wRw.eps')
+    else:
+        plt.savefig('lzjr-sim-woRw.eps')        
     plt.close(f)
 else:
     plt.show()
@@ -447,7 +450,10 @@ for i in range(njrsamp):
 plt.xlabel(r"L$_{\rm z}$ (L$_{\rm z,0}$)", fontsize=18)
 
 if Paper==True:
-    plt.savefig('lzhist-sim.eps')
+    if Rweight=='True':
+        plt.savefig('lzhist-sim-wRw.eps')
+    else:
+        plt.savefig('lzhist-sim-woRw.eps')      
     plt.close(f)
 else:
     plt.show()
@@ -608,7 +614,10 @@ f.subplots_adjust(left=0.15, bottom = 0.15, hspace=0.0, right = 0.9)
 #cb1.ax.tick_params(labelsize=16)
 
 if Paper==True:
-    plt.savefig('lzjz-sim.jpg')
+    if Rweight=='True':
+        plt.savefig('lzjz-sim-wRw.jpg')
+    else:
+        plt.savefig('lzjz-sim-woRw.jpg')
     plt.close(f)
 else:
     plt.show()
