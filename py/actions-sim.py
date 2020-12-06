@@ -28,7 +28,7 @@ Rweight = False
 Paper = False
 
 # for not displaying
-if Paper==True"
+if Paper==True:
     matplotlib.use('Agg')
 
 
