@@ -23,7 +23,7 @@ from sklearn.neighbors import KernelDensity
 ##### main programme start here #####
 
 # flags
-Rweight = False
+Rweight = True
 # making eps and jpg file for figure without showing in windows.
 Paper = False
 
@@ -45,8 +45,11 @@ agelim = 7000.0
 # lz > lzlim
 lzlim = 0.001
 # R range
-rgalmin = 4.0
-rgalmax = 12.0
+rgalmin = 3.0
+rgalmax = 18.0
+# Lz0 and omega0
+lz0 = rsun*vcircsun
+omega0 = vcircsun/rsun
 
 # read the simulation data
 infile = '../BabaMW/actionsFileID7001.fits'
@@ -72,9 +75,9 @@ vrads = star['vR'][sindx]
 vphis = -star['vphi'][sindx]
 vz = star['vz'][sindx]
 # normalised by rsun and vcirc
-jrs = star['Jr'][sindx]/(rsun*vcircsun)
-lzs = -star['Jphi'][sindx]/(rsun*vcircsun)
-jzs = star['Jz'][sindx]/(rsun*vcircsun)
+jrs = star['Jr'][sindx]/lz0
+lzs = -star['Jphi'][sindx]/lz0
+jzs = star['Jz'][sindx]/lz0
 omegars = star['omegar'][sindx]
 omegazs = star['omegaz'][sindx]
 omegaphis = -star['omegaphi'][sindx]
@@ -155,6 +158,7 @@ print(' Hmax =', np.max(H))
 # compute resonance location in action space
 # bar pattern speed
 omega_b = 40.0
+print(' omega_b=',omega_b, omega_b/omega0,' omega0')
 domega = 0.02
 # pick up stars at CR
 mres = 2.0
@@ -234,8 +238,6 @@ plt.rcParams["font.size"] = 16
 # log plot
 cmin = nlogmin
 cmax = np.max(Hlog)
-gauamplim=0.2
-gausiglim=50.0
 f, (ax1) = plt.subplots(1, sharex = True, figsize=(6,4))
 labpos = np.array([5.0, 40.0])
 im1 = ax1.imshow(Hlog, interpolation='gaussian', origin='lower', \
@@ -286,32 +288,33 @@ else:
     plt.show()
 
 ### Analyse Lz distribution at fixed Jr
-njrsamp = 4
+njrsamp = 2
 # select differen Jr sample
 # jrsamp_low = np.array([0.05, 0.075, 0.1])
 # jrsamp_high = np.array([0.075, 0.01, 0.0125])
 # jrsamp_low = np.array([0.1, 0.075, 0.05, 0.025])
 # jrsamp_high = np.array([0.15, 0.1, 0.075, 0.05])
 
-jrsamp_low = np.array([0.1, 0.075, 0.05, 0.025])
-jrsamp_high = np.array([0.15, 0.1, 0.075, 0.05])
+jrsamp_low = np.array([0.07, 0.01])
+jrsamp_high = np.array([0.15, 0.02])
 
 # lzrange
 nhist = 200
 lzmin_hist = lzrange[0]
 lzmax_hist = lzrange[1]
 # kernel size
-hlz = 0.04
+hlz = 0.03
 lz_bins = np.linspace(lzmin_hist, lzmax_hist, nhist)
 # y range
 ymin_hist = 0.0
-ymax_hist = 1.75
+ymax_hist = 1.2
 
-f, ax = plt.subplots(4, sharex = True, figsize=(5,8))
-f.subplots_adjust(hspace=0.0)
+# f, ax = plt.subplots(njrsamp, sharex = True, figsize=(5,8))
+f, ax = plt.subplots(njrsamp, sharex = True, figsize=(5,5))
+f.subplots_adjust(hspace=0.0, bottom=0.15)
 # f.subplots_adjust(bottom = 0.15)
 
-jrnorm_all = star['Jr']/(rsun*vcircsun)
+jrnorm_all = star['Jr']/lz0
 
 for i in range(njrsamp):
   print(' jr range=', jrsamp_low[i], jrsamp_high[i])
@@ -328,9 +331,9 @@ for i in range(njrsamp):
   vphis = -star['vphi'][sindx]
   vz = star['vz'][sindx]
   # normalised by rsun and vcirc
-  jrs = star['Jr'][sindx]/(rsun*vcircsun)
-  lzs = -star['Jphi'][sindx]/(rsun*vcircsun)
-  jzs = star['Jz'][sindx]/(rsun*vcircsun)
+  jrs = star['Jr'][sindx]/lz0
+  lzs = -star['Jphi'][sindx]/lz0
+  jzs = star['Jz'][sindx]/lz0
   omegars = star['omegar'][sindx]
   omegazs = star['omegaz'][sindx]
   omegaphis = -star['omegaphi'][sindx]
@@ -426,8 +429,11 @@ else:
 ### Lz-Jr for selected high Jr stars
 
 # selected Jr region
-jrmax = 0.15
-jrmin = 0.1
+jrmax = jrsamp_high[0]
+jrmin = jrsamp_low[0]
+# Jz region
+jzselmin = 0.005
+jzselmax = 0.05
 
 sindx = np.where((np.fabs(star['z']) < zmaxlim) & \
                  (-star['Jphi']>lzlim) & \
@@ -441,9 +447,9 @@ vrads = star['vR'][sindx]
 vphis = -star['vphi'][sindx]
 vz = star['vz'][sindx]
 # normalised by rsun and vcirc
-jrs = star['Jr'][sindx]/(rsun*vcircsun)
-lzs = -star['Jphi'][sindx]/(rsun*vcircsun)
-jzs = star['Jz'][sindx]/(rsun*vcircsun)
+jrs = star['Jr'][sindx]/lz0
+lzs = -star['Jphi'][sindx]/lz0
+jzs = star['Jz'][sindx]/lz0
 omegars = star['omegar'][sindx]
 omegazs = star['omegaz'][sindx]
 omegaphis = -star['omegaphi'][sindx]
@@ -471,7 +477,7 @@ H = H.T
 # minimum number of stars in each column
 # nsmin = 25
 # log value
-nlogmin = -2.0
+nlogmin = 0.0
 # nlogmin = -4.0
 nminlim = np.power(10.0, nlogmin)
 Hlog = np.zeros_like(H)
@@ -489,8 +495,6 @@ for i in range(ngridy):
 print('Lz-Jz Hmax =', np.max(H))
 
 # high Jz stars Lz distribution
-jzselmin = 0.01
-jzselmax = 0.0499
 jzindx = np.where((jzs>jzselmin) & (jzs<jzselmax))
 print('jz range=', jzselmin, jzselmax, \
       ' N selected stars=', len(jzs[jzindx]))
@@ -498,8 +502,8 @@ print('jz range=', jzselmin, jzselmax, \
 lzsels = lzs[jzindx]
 probs = probsjrs[jzindx]
 
-# KD
-hlz = 0.04
+# KDE
+hlz = 0.03
 nhist = 200
 lz_bins = np.linspace(lzrange[0], lzrange[1], nhist)
 kde = KernelDensity(kernel='epanechnikov', \
@@ -507,7 +511,7 @@ kde = KernelDensity(kernel='epanechnikov', \
 log_dens = kde.score_samples(lz_bins.reshape(-1, 1))
 # y range
 ymin_hist = 0.01
-ymax_hist = 2.0
+ymax_hist = 1.5
 
 # Final plot
 plt.rcParams["font.family"] = "Times New Roman"
@@ -516,7 +520,7 @@ plt.rcParams["font.size"] = 16
 
 # log plot
 cmin = nlogmin
-cmax = np.max(Hlog)*0.6
+cmax = np.max(Hlog)
 # cmin = 0.0
 # cmax = np.max(H)*0.5
 f, (ax1,ax2) = plt.subplots(2, sharex = True, figsize=(6,5), gridspec_kw={'height_ratios' : [1, 2]})

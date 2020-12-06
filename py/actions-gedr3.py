@@ -47,6 +47,9 @@ omegalim = 4.0
 # R range
 rgalmin = 4.0
 rgalmax = 12.0
+# Lz0 and omega0
+lz0 = rsun*vcircsun
+omega0 = vcircsun/rsun
 
 # read the simulation data
 infile = '../GaiaEDR3/actions_jashunt/eDR3_actions.fits'
@@ -79,9 +82,9 @@ vz = star['vz'][sindx]
 jrs = star['jR'][sindx]
 lzs = star['lz'][sindx]
 jzs = star['jz'][sindx]
-omegars = star['Omega_r'][sindx]*(vcircsun/rsun)
-omegazs = star['Omega_z'][sindx]*(vcircsun/rsun)
-omegaphis = star['Omega_p'][sindx]*(vcircsun/rsun)
+omegars = star['Omega_r'][sindx]*omega0
+omegazs = star['Omega_z'][sindx]*omega0
+omegaphis = star['Omega_p'][sindx]*omega0
 rgals = star['R'][sindx]
 
 # compute the weights
@@ -160,95 +163,126 @@ print(' Hmax =', np.max(Hlog))
 # Hat OLR version
 omega_b = 32.0
 # Sirius OLR version. 
-# omega_b = 38.0
+# omega_b = 40.0
 # Hercules OLR
-# omega_b = 53.0
+# omega_b = 50.0
+# omega range to use to identify resonances. 
 domega = 0.01
+# nslim for fitting
+nslimfit = 10
+
+print(' Omega Bar =', omega_b, omega_b/omega0,'Omega0')
+
 # pick up stars at CR
 mres = 2.0
 lres = 0.0
 indxcr = np.where(np.fabs((omega_b-omegaphis))<domega)
 print(' np CR=', np.shape(indxcr))
-# robust fit
-ransac_cr = linear_model.RANSACRegressor()
-y = lzs[indxcr].reshape(-1, 1)
-X = jrs[indxcr].reshape(-1, 1)
-ransac_cr.fit(X, y)
-# Predict data of estimated models
-line_ycr = np.linspace(jrrange[0], jrrange[1],npline).reshape(-1,1)
-line_Xcr = ransac_cr.predict(line_ycr)
+if len(lzs[indxcr])>nslimfit:
+    # robust fit
+    ransac_cr = linear_model.RANSACRegressor()
+    y = lzs[indxcr].reshape(-1, 1)
+    X = jrs[indxcr].reshape(-1, 1)
+    ransac_cr.fit(X, y)
+    # Predict data of estimated models
+    line_ycr = np.linspace(jrrange[0], jrrange[1],npline).reshape(-1,1)
+    line_Xcr = ransac_cr.predict(line_ycr)
+else:
+    line_ycr = np.linspace(jrrange[0], jrrange[1],npline).reshape(-1,1)
+    line_Xcr = np.zeros_like(line_ycr)-1.0
+ 
 
 # 4:1 resonance
 mres = 4.0
 lres = 1.0
 indx41 = np.where(np.fabs(mres*(omega_b-omegaphis)-lres*omegars)<domega)
-# print(' np 4:1=', np.shape(indx41))
-# robust fit
-ransac_41 = linear_model.RANSACRegressor()
-y = lzs[indx41].reshape(-1, 1)
-X = jrs[indx41].reshape(-1, 1)
-ransac_41.fit(X, y)
-# Predict data of estimated models
-line_y41 = np.linspace(jrrange[0], jrrange[1],npline).reshape(-1,1)
-line_X41 = ransac_41.predict(line_y41)
-
+print(' np 4:1=', np.shape(indx41))
+if len(lzs[indx41])>nslimfit:
+    # robust fit
+    ransac_41 = linear_model.RANSACRegressor()
+    y = lzs[indx41].reshape(-1, 1)
+    X = jrs[indx41].reshape(-1, 1)
+    ransac_41.fit(X, y)
+    # Predict data of estimated models
+    line_y41 = np.linspace(jrrange[0], jrrange[1],npline).reshape(-1,1)
+    line_X41 = ransac_41.predict(line_y41)
+else:
+    line_y41 = np.linspace(jrrange[0], jrrange[1],npline).reshape(-1,1)
+    line_X41 = np.zeros_like(line_y41)-1.0
+  
 # OLR resonance
 mres = 2.0
 lres = 1.0
 indxolr = np.where(np.fabs(mres*(omega_b-omegaphis)-lres*omegars)<domega)
-# print(' np OLR=', np.shape(indxolr))
-# robust fit
-ransac_olr = linear_model.RANSACRegressor()
-y = lzs[indxolr].reshape(-1, 1)
-X = jrs[indxolr].reshape(-1, 1)
-ransac_olr.fit(X, y)
-# Predict data of estimated models
-line_yolr = np.linspace(jrrange[0], jrrange[1], npline).reshape(-1,1)
-line_Xolr = ransac_olr.predict(line_yolr)
-print(' OLR Lz = ', line_Xolr[0])
+print(' np OLR=', np.shape(indxolr))
+if len(lzs[indxolr])>nslimfit:
+    # robust fit
+    ransac_olr = linear_model.RANSACRegressor()
+    y = lzs[indxolr].reshape(-1, 1)
+    X = jrs[indxolr].reshape(-1, 1)
+    ransac_olr.fit(X, y)
+    # Predict data of estimated models
+    line_yolr = np.linspace(jrrange[0], jrrange[1], npline).reshape(-1,1)
+    line_Xolr = ransac_olr.predict(line_yolr)
+else:
+    line_yolr = np.linspace(jrrange[0], jrrange[1], npline).reshape(-1,1)
+    line_Xolr = np.zeros_like(line_xolr)
+print(' OLR Lz at Jr=0 =', line_Xolr[0])
 
 # 4:3 resonance, but the ridges does not show up well. 
 mres = 4.0
 lres = 3.0
 indx43 = np.where(np.fabs(mres*(omega_b-omegaphis)-lres*omegars)<domega)
-# print(' np 4:3=', np.shape(indxolr))
-# robust fit
-ransac_43 = linear_model.RANSACRegressor()
-X = lzs[indx43].reshape(-1, 1)
-y = jrs[indx43].reshape(-1, 1)
-ransac_43.fit(X, y)
-# Predict data of estimated models
-line_X43 = np.linspace(lzrange[0], lzrange[1],npline).reshape(-1,1)
-line_y43 = ransac_43.predict(line_X43)
+print(' np 4:3=', np.shape(indx43))
+if len(lzs[indx43])>nslimfit:
+    # robust fit
+    ransac_43 = linear_model.RANSACRegressor()
+    X = lzs[indx43].reshape(-1, 1)
+    y = jrs[indx43].reshape(-1, 1)
+    ransac_43.fit(X, y)
+    # Predict data of estimated models
+    line_X43 = np.linspace(lzrange[0], lzrange[1],npline).reshape(-1,1)
+    line_y43 = ransac_43.predict(line_X43)
+else:
+    line_X43 = np.linspace(lzrange[0], lzrange[1],npline).reshape(-1,1)
+    line_y43 = np.zeros_like(line_X43)
 
 # 1:1 resonance, but the ridges does not show up well. 
-# mres = 1.0
-# lres = 1.0
-# indx11 = np.where(np.fabs(mres*(omega_b-omegaphis)-lres*omegars)<domega)
-# print(' np 1:1=', np.shape(indxolr))
-# robust fit
-# ransac_11 = linear_model.RANSACRegressor()
-# X = lzs[indx11].reshape(-1, 1)
-# y = jrs[indx11].reshape(-1, 1)
-# ransac_11.fit(X, y)
-# Predict data of estimated models
-# line_X11 = np.linspace(lzrange[0], lzrange[1],npline).reshape(-1,1)
-# line_y11 = ransac_11.predict(line_X11)
+mres = 1.0
+lres = 1.0
+indx11 = np.where(np.fabs(mres*(omega_b-omegaphis)-lres*omegars)<domega)
+print(' np 1:1=', np.shape(indx11))
+if len(lzs[indx11])>nslimfit:
+    # robust fit
+    ransac_11 = linear_model.RANSACRegressor()
+    X = lzs[indx11].reshape(-1, 1)
+    y = jrs[indx11].reshape(-1, 1)
+    ransac_11.fit(X, y)
+    # Predict data of estimated models
+    line_X11 = np.linspace(lzrange[0], lzrange[1],npline).reshape(-1,1)
+    line_y11 = ransac_11.predict(line_X11)
+else:
+    line_X11 = np.linspace(lzrange[0], lzrange[1],npline).reshape(-1,1)
+    line_y11 = np.zeros_like(line_X11)-1.0
 
 # 4:-1 resonance, but the ridges does not show up well. 
 mres = 4.0
 lres = -1
 indxi41 = np.where(np.fabs(mres*(omega_b-omegaphis)-lres*omegars)<domega)
-# print(' np 4:3=', np.shape(indxolr))
-# robust fit
-ransac_i41 = linear_model.RANSACRegressor()
-X = lzs[indxi41].reshape(-1, 1)
-y = jrs[indxi41].reshape(-1, 1)
-ransac_i41.fit(X, y)
-# Predict data of estimated models
-line_Xi41 = np.linspace(lzrange[0], lzrange[1],npline).reshape(-1,1)
-line_yi41 = ransac_i41.predict(line_Xi41)
-                 
+print(' np 4:-1=', np.shape(indxi41))
+if len(lzs[indxi41])>nslimfit:
+    # robust fit
+    ransac_i41 = linear_model.RANSACRegressor()
+    X = lzs[indxi41].reshape(-1, 1)
+    y = jrs[indxi41].reshape(-1, 1)
+    ransac_i41.fit(X, y)
+    # Predict data of estimated models
+    line_Xi41 = np.linspace(lzrange[0], lzrange[1],npline).reshape(-1,1)
+    line_yi41 = ransac_i41.predict(line_Xi41)
+else:
+    line_Xi41 = np.linspace(lzrange[0], lzrange[1],npline).reshape(-1,1)
+    line_yi41 = np.zeros_like(line_Xi41)-1.0
+
 # Final plot
 plt.rcParams["font.family"] = "Times New Roman"
 plt.rcParams["mathtext.fontset"] = "stixsans"
@@ -293,6 +327,9 @@ plt.plot(line_X43, line_y43, color='green')
 # 4:-1
 # plt.scatter(lzs[indxi41], jrs[indxi41], c='blue', marker='o',s=1)
 plt.plot(line_Xi41, line_yi41, color='blue')
+# 1:1
+# plt.scatter(lzs[indxi41], jrs[indxi41], c='blue', marker='o',s=1)
+plt.plot(line_X11, line_y11, color='grey')
 
 # identify the radial boundary
 # plt.scatter(lzs[rgals>11.9], jrs[rgals>11.9], c='white', marker='.',s=1)
@@ -359,9 +396,9 @@ for i in range(njrsamp):
   jrs = star['jR'][sindx]
   lzs = star['lz'][sindx]
   jzs = star['jz'][sindx]
-  omegars = star['Omega_r'][sindx]*(vcircsun/rsun)
-  omegazs = star['Omega_z'][sindx]*(vcircsun/rsun)
-  omegaphis = -star['Omega_p'][sindx]*(vcircsun/rsun)
+  omegars = star['Omega_r'][sindx]*omega0
+  omegazs = star['Omega_z'][sindx]*omega0
+  omegaphis = -star['Omega_p'][sindx]*omega0
   probs = probs_all[sindx]
   rgals = star['R'][sindx]  
 
@@ -409,7 +446,6 @@ for i in range(njrsamp):
   if i==0:
     r43_low0 = r43_low
     r43_high0 = r43_high
-  
   print(' lz region for 4:3 =', r43_low, r43_high)
   ax[i].add_patch(
     patches.Rectangle((r43_low, ymin_hist), r43_high-r43_low, \
@@ -418,8 +454,12 @@ for i in range(njrsamp):
   # 4:-1
   lindx = np.where((line_yi41>jrsamp_low[i]) & (line_yi41<jrsamp_high[i]))
   # print(' range, olr=', jrsamp_low[i], jrsamp_high[i], line_yolr[lindx], line_Xolr[lindx])
-  ri41_low = np.min(line_Xi41[lindx])
-  ri41_high = np.max(line_Xi41[lindx])
+  if len(line_Xi41[lindx])>0:  
+      ri41_low = np.min(line_Xi41[lindx])
+      ri41_high = np.max(line_Xi41[lindx])
+  else:
+      ri41_low = -1.0
+      ri41_high = -1.0
   if i==0:
     ri41_low0 = ri41_low
     ri41_high0 = ri41_high
@@ -431,20 +471,22 @@ for i in range(njrsamp):
   
 
   # 1:1
-  # lindx = np.where((line_y11>jrsamp_low[i]) & (line_y11<jrsamp_high[i]))
+  lindx = np.where((line_y11>jrsamp_low[i]) & (line_y11<jrsamp_high[i]))
   # print(' range, olr=', jrsamp_low[i], jrsamp_high[i], line_yolr[lindx], line_Xolr[lindx])
-  # r11_low = np.min(line_X11[lindx])
-  # r11_high = np.max(line_X11[lindx])
-  # if i==0:
-  #  r11_low0 = r11_low
-  #  r11_high0 = r11_high
-  
-  # print(' lz region for 1:1 =', r11_low, r11_high)
-  # ax[i].add_patch(
-  #  patches.Rectangle((r11_low, ymin_hist), r11_high-r11_low, \
-  #                    ymax_hist-ymin_hist, facecolor='grey', fill=True, alpha=0.5))
-  
-  
+  if len(line_X11[lindx])>0:
+      r11_low = np.min(line_X11[lindx])
+      r11_high = np.max(line_X11[lindx])
+  else:
+      r11_low = -1.0
+      r11_high = -1.0
+  if i==0:
+    r11_low0 = r11_low
+    r11_high0 = r11_high
+  print(' lz region for 1:1 =', r11_low, r11_high)
+  ax[i].add_patch(
+    patches.Rectangle((r11_low, ymin_hist), r11_high-r11_low, \
+                      ymax_hist-ymin_hist, facecolor='grey', fill=True, alpha=0.5))
+ 
   # histogram 
   # ax[i].hist(lzs, bins = lz_bins, fc='#AAAAFF', density=True)
   # KDE
@@ -495,9 +537,9 @@ vz = star['vz'][sindx]
 jrs = star['jR'][sindx]
 lzs = star['lz'][sindx]
 jzs = star['jz'][sindx]
-omegars = star['Omega_r'][sindx]*(vcircsun/rsun)
-omegazs = star['Omega_z'][sindx]*(vcircsun/rsun)
-omegaphis = star['Omega_p'][sindx]*(vcircsun/rsun)
+omegars = star['Omega_r'][sindx]*omega0
+omegazs = star['Omega_z'][sindx]*omega0
+omegaphis = star['Omega_p'][sindx]*omega0
 probsjrs = probs_all[sindx]
 
 # set number of grid
@@ -589,7 +631,10 @@ ax1.add_patch(
                       ymax_hist-ymin_hist, facecolor='green', fill=True,alpha=0.5))
 ax1.add_patch(
     patches.Rectangle((ri41_low0, ymin_hist), ri41_high0-ri41_low0, \
-                      ymax_hist-ymin_hist, facecolor='green', fill=True,alpha=0.5))
+                      ymax_hist-ymin_hist, facecolor='blue', fill=True,alpha=0.5))
+ax1.add_patch(
+    patches.Rectangle((r11_low0, ymin_hist), r11_high0-r11_low0, \
+                      ymax_hist-ymin_hist, facecolor='grey', fill=True,alpha=0.5))
 
 # Lz vs. Jz
 ax2.add_patch(
