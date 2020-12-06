@@ -19,30 +19,34 @@ import scipy.interpolate
 from sklearn import linear_model
 from sklearn.neighbors import KernelDensity
 
-# for not displaying
-# matplotlib.use('Agg')
-
 ##### main programme start here #####
+
+# flags
+# flags
+Rweight = True
+# making eps and jpg file for figure without showing in windows.
+Paper = False
+
+# for not displaying
+if Paper==True:
+    matplotlib.use('Agg')
 
 # circular velocity at rsun from MWPotential2014
 rsun = 8.0
-zsun = 0.0
 vcircsun = 220.0
 
 # condition to select stars
 # |z| < zmaxlim
 zmaxlim = 0.5
-# age < agelim
-agelim = 7000.0
 # lz > lzlim
 lzlim = 0.001
-# rlim
-rlimlow = 4.0
-rlimhigh = 12.0
 # jrlim
 jrlim = 0.3
 # omega
 omegalim = 4.0
+# R range
+rgalmin = 4.0
+rgalmax = 12.0
 
 # read the simulation data
 infile = '../GaiaEDR3/actions_jashunt/eDR3_actions.fits'
@@ -52,13 +56,16 @@ star_hdus.close()
 
 print(' number of input =', len(star['R']))
 
+# save radius data for all the input
+rgals_all = star['R']
+
 # selection of stars
 sindx = np.where((np.fabs(star['z']) < zmaxlim) & \
                  (star['lz']>lzlim) & \
                  (star['jR']<0.3) &
                  (np.fabs(star['Omega_p'])<omegalim) &
                  (np.fabs(star['Omega_r'])<omegalim) &        
-                 (star['R']>rlimlow) & (star['R']<rlimhigh))
+                 (star['R']>rgalmin) & (star['R']<rgalmax))
 #                 (star['age']>agelim))
 nstars = len(star['R'][sindx])
 
@@ -75,32 +82,63 @@ jzs = star['jz'][sindx]
 omegars = star['Omega_r'][sindx]*(vcircsun/rsun)
 omegazs = star['Omega_z'][sindx]*(vcircsun/rsun)
 omegaphis = star['Omega_p'][sindx]*(vcircsun/rsun)
+rgals = star['R'][sindx]
+
+# compute the weights
+if Rweight==True:
+    # R histogram
+    rgalpres = star['R'][sindx]
+    nhist = 64
+    rgalhist, bin_edges = np.histogram(rgals, bins=nhist, \
+                                       range=(rgalmin, rgalmax), density=True)
+    rgal_bins = 0.5*(bin_edges[:nhist]+bin_edges[1:])
+
+    # compute probability at bins, max one = 1
+    nrmax = np.max(rgalhist)
+    print(' max at R hist = ', nrmax)
+    probs_bins = nrmax/rgalhist
+
+    # probability for all the particles
+    probs_all = np.zeros_like(rgals_all)
+    probs_all[sindx] = np.interp(rgals_all[sindx], rgal_bins, probs_bins)
+    probs = np.interp(rgals, rgal_bins, probs_bins)
+
+    plt.hist(rgals, bins=rgal_bins, histtype='step', color='blue', \
+             label='original')
+    plt.hist(rgals, bins=rgal_bins, weights=probs, histtype='step', \
+             color='red', label='R weighted')
+
+    plt.show()
+else:
+    probs_all = np.zeros_like(rgals_all)
+    probs_all[sindx] = 1.0
+    probs = np.zeros_like(rgals)+1.0
 
 # minimum number of stars in each column
 nsmin = 25
 # set number of grid
-ngridx = 200
-ngridy = 250
+ngridx = 250
+ngridy = 300
 # npline
 npline = 1000
                  
 # grid plot for Lz vs. Jr
 lzrange = np.array([0.001, 1.75])
-jrrange = np.array([0.0, 0.2])
+jrrange = np.array([0.0, 0.15])
 
 #jrticks = np.array([-40.0, -20.0, 0.0, 20.0, 40.0])
 
 # 2D histogram 
 H, xedges, yedges = np.histogram2d(lzs, jrs, \
                     bins=(ngridx, ngridy), \
-                    range=(lzrange, jrrange))
+                    range=(lzrange, jrrange), weights=probs)
 # set x-axis (lzs) is axis=1
 H = H.T
 # normalised by row
 # print(' hist = ',np.shape(H))
 # print(' np row = ',np.sum(H, axis=1))
 # log value
-nlogmin = 0.1
+nlogmin = 0.5
 # nlogmin = -4.0
 nminlim = np.power(10.0, nlogmin)
 Hlog = np.zeros_like(H)
@@ -115,7 +153,7 @@ for i in range(ngridy):
   
 # print(' after normalised=',np.sum(H, axis=1))
 # print(' H=', H[ngridx-4, :])
-print(' Hmax =', np.max(H))
+print(' Hmax =', np.max(Hlog))
 
 # compute resonance location in action space
 # bar pattern speed
@@ -210,8 +248,6 @@ ransac_i41.fit(X, y)
 # Predict data of estimated models
 line_Xi41 = np.linspace(lzrange[0], lzrange[1],npline).reshape(-1,1)
 line_yi41 = ransac_i41.predict(line_Xi41)
-
-
                  
 # Final plot
 plt.rcParams["font.family"] = "Times New Roman"
@@ -221,8 +257,6 @@ plt.rcParams["font.size"] = 16
 # log plot
 cmin = nlogmin
 cmax = np.max(Hlog)
-gauamplim=-10.0
-gausiglim=50.0
 f, (ax1) = plt.subplots(1, sharex = True, figsize=(6,4))
 labpos = np.array([5.0, 40.0])
 im1 = ax1.imshow(Hlog, interpolation='gaussian', origin='lower', \
@@ -257,45 +291,50 @@ plt.plot(line_X43, line_y43, color='green')
 # plt.scatter(lzs[indx11], jrs[indx11], c='white', marker='o',s=1)
 # plt.plot(line_X11, line_y11, color='white')
 # 4:-1
-plt.scatter(lzs[indxi41], jrs[indxi41], c='blue', marker='o',s=1)
+# plt.scatter(lzs[indxi41], jrs[indxi41], c='blue', marker='o',s=1)
 plt.plot(line_Xi41, line_yi41, color='blue')
 
+# identify the radial boundary
+# plt.scatter(lzs[rgals>11.9], jrs[rgals>11.9], c='white', marker='.',s=1)
+# plt.scatter(lzs[rgals<4.1], jrs[rgals<4.1], c='black', marker='.',s=1)
 
 f.subplots_adjust(left=0.15, bottom = 0.15, hspace=0.0, right = 0.9)
 #cbar_ax1 = f.add_axes([0.8, 0.15, 0.05, 0.725])
 #cb1 = f.colorbar(im1, cax=cbar_ax1)
 #cb1.ax.tick_params(labelsize=16)
 
-# plt.savefig('lzjr-gedr3.eps')
-# plt.savefig('lzjr-gedr3.jpg')
-# plt.close(f)
-
-plt.show()
-
+if Paper==True:
+    plt.savefig('lzjr-gedr3.eps')
+    plt.savefig('lzjr-gedr3.jpg')
+    plt.close(f)
+else:
+    plt.show()
 
 ### Analyse Lz distribution at fixed Jr
-njrsamp = 4
+njrsamp = 2
 # select differen Jr sample
 # jrsamp_low = np.array([0.05, 0.075, 0.1])
 # jrsamp_high = np.array([0.075, 0.01, 0.0125])
 # jrsamp_low = np.array([0.1, 0.075, 0.05, 0.025])
 # jrsamp_high = np.array([0.125, 0.1, 0.075, 0.05])
-jrsamp_low = np.array([0.1, 0.075, 0.05, 0.025])
-jrsamp_high = np.array([0.15, 0.1, 0.075, 0.05])
+
+jrsamp_low = np.array([0.03, 0.01])
+jrsamp_high = np.array([0.1, 0.02])
 
 # lzrange
 nhist = 200
 lzmin_hist = lzrange[0]
 lzmax_hist = lzrange[1]
 # kernel size
-hlz = 0.02
+hlz = 0.03
 lz_bins = np.linspace(lzmin_hist, lzmax_hist, nhist)
 # y range
 ymin_hist = 0.0
-ymax_hist = 2.9
+ymax_hist = 1.7
 
-f, ax = plt.subplots(4, sharex = True, figsize=(5,8))
-f.subplots_adjust(hspace=0.0)
+#f, ax = plt.subplots(njrsamp, sharex = True, figsize=(5,8))
+f, ax = plt.subplots(njrsamp, sharex = True, figsize=(5,5))
+f.subplots_adjust(hspace=0.0, bottom=0.15)
 # f.subplots_adjust(bottom = 0.15)
 
 jrnorm_all = star['Jr']
@@ -310,7 +349,7 @@ for i in range(njrsamp):
                  (jrnorm_all<jrsamp_high[i]) & \
                  (np.fabs(star['Omega_p'])<omegalim) & \
                  (np.fabs(star['Omega_r'])<omegalim) & \
-                 (star['R']>rlimlow) & (star['R']<rlimhigh))
+                 (star['R']>rgalmin) & (star['R']<rgalmax))                   
   print(' N selected stars=', len(star['R'][sindx]))
   # for selected stars (positive rotation in clockwise)
   vrads = star['vR'][sindx]
@@ -323,6 +362,8 @@ for i in range(njrsamp):
   omegars = star['Omega_r'][sindx]*(vcircsun/rsun)
   omegazs = star['Omega_z'][sindx]*(vcircsun/rsun)
   omegaphis = -star['Omega_p'][sindx]*(vcircsun/rsun)
+  probs = probs_all[sindx]
+  rgals = star['R'][sindx]  
 
   # resonance range
   # cr
@@ -400,7 +441,7 @@ for i in range(njrsamp):
   
   # print(' lz region for 1:1 =', r11_low, r11_high)
   # ax[i].add_patch(
-a  #  patches.Rectangle((r11_low, ymin_hist), r11_high-r11_low, \
+  #  patches.Rectangle((r11_low, ymin_hist), r11_high-r11_low, \
   #                    ymax_hist-ymin_hist, facecolor='grey', fill=True, alpha=0.5))
   
   
@@ -408,7 +449,7 @@ a  #  patches.Rectangle((r11_low, ymin_hist), r11_high-r11_low, \
   # ax[i].hist(lzs, bins = lz_bins, fc='#AAAAFF', density=True)
   # KDE
   kde = KernelDensity(kernel='epanechnikov', \
-                      bandwidth=hlz).fit(lzs.reshape(-1, 1))
+                      bandwidth=hlz).fit(lzs.reshape(-1, 1), sample_weight=probs)
   log_dens = kde.score_samples(lz_bins.reshape(-1, 1))
   ax[i].plot(lz_bins, np.exp(log_dens), color='black')
 
@@ -421,27 +462,29 @@ a  #  patches.Rectangle((r11_low, ymin_hist), r11_high-r11_low, \
   
 plt.xlabel(r"L$_{\rm z}$ (L$_{\rm z,0}$)", fontsize=18)
 
-
-# plt.savefig('lzhist-gedr3.eps')
-# plt.close(f)
-
-plt.show()
-
+if Paper==True:
+    plt.savefig('lzhist-gedr3.eps')
+    plt.close(f)
+else:
+    plt.show()
 
 ###  Lz vs. Jz for selected Jr stars
 
 # jzlim
 jzlim = 0.3
 
-# selected Jr region
-jrmax = 0.15
-jrmin = 0.1
+#### selected Jr region
+jrmax = jrsamp_high[0]
+jrmin = jrsamp_low[0]
+# Jz region
+jzselmin = 0.005
+jzselmax = 0.02
 
 sindx = np.where((np.fabs(star['z']) < zmaxlim) & \
                  (star['lz']>lzlim) & \
                  (np.fabs(star['Omega_p'])<omegalim) & \
                  (np.fabs(star['Omega_r'])<omegalim) & \
-                 (star['R']>rlimlow) & (star['R']<rlimhigh) & \
+                 (star['R']>rgalmin) & (star['R']<rgalmax) & \
                  (jrnorm_all>=jrmin) & \
                  (jrnorm_all<jrmax))
 # for selected stars (positive rotation in clockwise)
@@ -455,6 +498,7 @@ jzs = star['jz'][sindx]
 omegars = star['Omega_r'][sindx]*(vcircsun/rsun)
 omegazs = star['Omega_z'][sindx]*(vcircsun/rsun)
 omegaphis = star['Omega_p'][sindx]*(vcircsun/rsun)
+probsjrs = probs_all[sindx]
 
 # set number of grid
 ngridx = 300
@@ -469,14 +513,14 @@ jzrange = np.array([0.0, 0.05])
 # 2D histogram 
 H, xedges, yedges = np.histogram2d(lzs, jzs, \
                     bins=(ngridx, ngridy), \
-                    range=(lzrange, jzrange))
+                    range=(lzrange, jzrange), weights=probsjrs)
 # set x-axis (lzs) is axis=1
 H = H.T
 # normalised by row
 # minimum number of stars in each column
 # nsmin = 25
 # log value
-nlogmin = -2.0
+nlogmin = 0.5
 # nlogmin = -4.0
 nminlim = np.power(10.0, nlogmin)
 Hlog = np.zeros_like(H)
@@ -494,25 +538,22 @@ for i in range(ngridy):
 print('Lz-Jz Hmax =', np.max(H))
 
 # high Jz stars Lz distribution
-jzselmin = 0.005
-jzselmax = 0.05
-# jzselmin = 0.01
-jzselmax = 0.05
 jzindx = np.where((jzs>jzselmin) & (jzs<jzselmax))
 print('jz range=', jzselmin, jzselmax, \
       ' N selected stars=', len(jzs[jzindx]))
 # for selected stars (positive rotation in clockwise)
 lzsels = lzs[jzindx]
+probs = probsjrs[jzindx]
 
 # KDE
 hlz = 0.03
 nhist = 200
 lz_bins = np.linspace(lzrange[0], lzrange[1], nhist)
 kde = KernelDensity(kernel='epanechnikov', \
-                      bandwidth=hlz).fit(lzsels.reshape(-1, 1))
+                      bandwidth=hlz).fit(lzsels.reshape(-1, 1), sample_weight=probs)
 log_dens = kde.score_samples(lz_bins.reshape(-1, 1))
 # y range
-ymin_hist = 0.0
+ymin_hist = 0.01
 ymax_hist = 2.2
 
 # Final plot
@@ -522,7 +563,7 @@ plt.rcParams["font.size"] = 16
 
 # log plot
 cmin = nlogmin
-cmax = np.max(Hlog)*0.6
+cmax = np.max(Hlog)
 # cmin = 0.0
 # cmax = np.max(H)*0.5
 f, (ax1,ax2) = plt.subplots(2, sharex = True, figsize=(6,5), gridspec_kw={'height_ratios' : [1, 2]})
@@ -579,11 +620,13 @@ f.subplots_adjust(left=0.15, bottom = 0.15, hspace=0.0, right = 0.9)
 #cb1 = f.colorbar(im1, cax=cbar_ax1)
 #cb1.ax.tick_params(labelsize=16)
 
-#plt.savefig('lzjz-gedr3.eps')
-# plt.savefig('lzjz-gedr3.jpg')
-# plt.close(f)
 
-plt.show()
+if Paper==True:
+#plt.savefig('lzjz-gedr3.eps')
+    plt.savefig('lzjz-gedr3.jpg')
+    plt.close(f)
+else:
+    plt.show()
 
 
 
