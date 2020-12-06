@@ -19,24 +19,21 @@ import scipy.interpolate
 from sklearn import linear_model
 from sklearn.neighbors import KernelDensity
 
-# for not displaying
-# matplotlib.use('Agg')
 
 ##### main programme start here #####
 
 # flags
-# constant for proper motion unit conversion
-pmvconst = 4.74047
-# MW's solar velocity from Bland-Hawthorn & Gerhard
-usun = 10.0
-vsun = 248.0
-wsun = 7.0
-vcircsun = 248.0-11.0
-rsun = 8.2
-zsun = 0.0
+Rweight = False
+# making eps and jpg file for figure without showing in windows.
+Paper = False
+
+# for not displaying
+if Paper==True"
+    matplotlib.use('Agg')
+
 
 # circular velocity at rsun in BabaMW at t=7 Gyr
-run = 8.0
+rsun = 8.0
 zsun = 0.0
 vcircsun = 197.0
 
@@ -47,6 +44,9 @@ zmaxlim = 0.5
 agelim = 7000.0
 # lz > lzlim
 lzlim = 0.001
+# R range
+rgalmin = 4.0
+rgalmax = 12.0
 
 # read the simulation data
 infile = '../BabaMW/actionsFileID7001.fits'
@@ -56,11 +56,14 @@ star_hdus.close()
 
 print(' number of input =', len(star['R']))
 
+rgals_all = star['R']
+
 # selection of stars
 sindx = np.where((np.fabs(star['z']) < zmaxlim) & \
-                 (-star['Jphi']>lzlim))
-#                 (star['age']>agelim))
-nstars = len(star['R'][sindx])
+                 (-star['Jphi']>lzlim) & \
+                 (star['R']>rgalmin) & (star['R']<rgalmax))
+
+nstars = len(star['R'][sindx])    
 
 print(' N selected=',nstars)
 
@@ -76,6 +79,37 @@ omegars = star['omegar'][sindx]
 omegazs = star['omegaz'][sindx]
 omegaphis = -star['omegaphi'][sindx]
 ages = star['age'][sindx]
+rgals = star['R'][sindx]
+
+# compute the weights
+if Rweight==True:
+    # R histogram
+    rgalpres = star['R'][sindx]
+    nhist = 16
+    rgalhist, bin_edges = np.histogram(rgals, bins=nhist, \
+                                       range=(rgalmin, rgalmax), density=True)
+    rgal_bins = 0.5*(bin_edges[:nhist]+bin_edges[1:])
+
+    # compute probability at bins, max one = 1
+    nrmax = np.max(rgalhist)
+    print(' max at R hist = ', nrmax)
+    probs_bins = nrmax/rgalhist
+
+    # probability for all the particles
+    probs_all = np.zeros_like(rgals_all)
+    probs_all[sindx] = np.interp(rgals_all[sindx], rgal_bins, probs_bins)
+    probs = np.interp(rgals, rgal_bins, probs_bins)
+
+    plt.hist(rgals, bins=rgal_bins, histtype='step', color='blue', \
+             label='original')
+    plt.hist(rgals, bins=rgal_bins, weights=probs, histtype='step', \
+             color='red', label='R weighted')
+
+    plt.show()
+else:
+    probs_all = np.zeros_like(rgals_all)
+    probs_all[sindx] = 1.0
+    probs = np.zeros_like(rgals)+1.0
 
 # minimum number of stars in each column
 nsmin = 25
@@ -94,7 +128,7 @@ jrrange = np.array([0.0, 0.2])
 # 2D histogram 
 H, xedges, yedges = np.histogram2d(lzs, jrs, \
                     bins=(ngridx, ngridy), \
-                    range=(lzrange, jrrange))
+                    range=(lzrange, jrrange), weights=probs)
 # set x-axis (lzs) is axis=1
 H = H.T
 # normalised by row
@@ -131,7 +165,7 @@ print(' np CR=', np.shape(indxcr))
 ransac_cr = linear_model.RANSACRegressor()
 y = lzs[indxcr].reshape(-1, 1)
 X = jrs[indxcr].reshape(-1, 1)
-ransac_cr.fit(X, y)
+ransac_cr.fit(X,  y)
 # Predict data of estimated models
 line_ycr = np.linspace(jrrange[0], jrrange[1],npline).reshape(-1,1)
 line_Xcr = ransac_cr.predict(line_ycr)
@@ -191,7 +225,7 @@ ransac_i41.fit(X, y)
 # Predict data of estimated models
 line_yi41 = np.linspace(jrrange[0], jrrange[1], npline).reshape(-1,1)
 line_Xi41 = ransac_i41.predict(line_yi41)
-                 
+
 # Final plot
 plt.rcParams["font.family"] = "Times New Roman"
 plt.rcParams["mathtext.fontset"] = "stixsans"
@@ -233,19 +267,23 @@ plt.plot(line_Xolr, line_yolr, color='red')
 # plt.scatter(lzs[indx43], jrs[indx43], c='black', marker='.',s=1)
 plt.plot(line_X43, line_y43, color='green')
 # plot 4:-1 blue
-plt.scatter(lzs[indxi41], jrs[indxi41], c='blue', marker='.',s=1)
+# plt.scatter(lzs[indxi41], jrs[indxi41], c='blue', marker='.',s=1)
 plt.plot(line_Xi41, line_yi41, color='blue')
 
+# identify the radial boundary
+# plt.scatter(lzs[rgals>11.995], jrs[rgals>11.995], c='white', marker='.',s=1)
+# plt.scatter(lzs[rgals<4.005], jrs[rgals<4.005], c='black', marker='.',s=1)
 
 f.subplots_adjust(left=0.15, bottom = 0.15, hspace=0.0, right = 0.9)
 #cbar_ax1 = f.add_axes([0.8, 0.15, 0.05, 0.725])
 #cb1 = f.colorbar(im1, cax=cbar_ax1)
 #cb1.ax.tick_params(labelsize=16)
 
-# plt.savefig('lzjr-sim.eps')
-# plt.close(f)
-
-plt.show()
+if Paper==True:
+    plt.savefig('lzjr-sim.eps')
+    plt.close(f)
+else:
+    plt.show()
 
 ### Analyse Lz distribution at fixed Jr
 njrsamp = 4
@@ -263,7 +301,7 @@ nhist = 200
 lzmin_hist = lzrange[0]
 lzmax_hist = lzrange[1]
 # kernel size
-hlz = 0.02
+hlz = 0.04
 lz_bins = np.linspace(lzmin_hist, lzmax_hist, nhist)
 # y range
 ymin_hist = 0.0
@@ -281,7 +319,8 @@ for i in range(njrsamp):
   sindx = np.where((np.fabs(star['z']) < zmaxlim) & \
                    (-star['Jphi']>lzlim) & \
                    (jrnorm_all>=jrsamp_low[i]) &
-                   (jrnorm_all<jrsamp_high[i]))
+                   (jrnorm_all<jrsamp_high[i]) &
+                   (star['R']>rgalmin) & (star['R']<rgalmax))
   #                 (star['age']<agelim))
   print(' N selected stars=', len(star['R'][sindx]))
   # for selected stars (positive rotation in clockwise)
@@ -295,6 +334,11 @@ for i in range(njrsamp):
   omegars = star['omegar'][sindx]
   omegazs = star['omegaz'][sindx]
   omegaphis = -star['omegaphi'][sindx]
+  probs = probs_all[sindx]
+  rgals = star['R'][sindx]  
+
+  # plt.scatter(rgals, probs, marker='.', facecolors='blue', s=1)
+  # plt.show()
 
   # resonance range
   # cr
@@ -360,7 +404,7 @@ for i in range(njrsamp):
   # ax[i].hist(lzs, bins = lz_bins, fc='#AAAAFF', density=True)
   # KDE
   kde = KernelDensity(kernel='epanechnikov', \
-                      bandwidth=hlz).fit(lzs.reshape(-1, 1))
+                      bandwidth=hlz).fit(lzs.reshape(-1, 1), sample_weight=probs)
   log_dens = kde.score_samples(lz_bins.reshape(-1, 1))
   ax[i].plot(lz_bins, np.exp(log_dens), color='black')
 
@@ -373,10 +417,11 @@ for i in range(njrsamp):
   
 plt.xlabel(r"L$_{\rm z}$ (L$_{\rm z,0}$)", fontsize=18)
 
-# plt.savefig('lzhist-sim.eps')
-# plt.close(f)
-
-plt.show()
+if Paper==True:
+    plt.savefig('lzhist-sim.eps')
+    plt.close(f)
+else:
+    plt.show()
 
 ### Lz-Jr for selected high Jr stars
 
@@ -387,7 +432,8 @@ jrmin = 0.1
 sindx = np.where((np.fabs(star['z']) < zmaxlim) & \
                  (-star['Jphi']>lzlim) & \
                  (jrnorm_all>=jrmin) &
-                 (jrnorm_all<jrmax))
+                 (jrnorm_all<jrmax) &
+                 (star['R']>rgalmin) & (star['R']<rgalmax))
 print('jr range=', jrmin, jrmax, \
       ' N selected stars=', len(star['R'][sindx]))
 # for selected stars (positive rotation in clockwise)
@@ -401,6 +447,7 @@ jzs = star['Jz'][sindx]/(rsun*vcircsun)
 omegars = star['omegar'][sindx]
 omegazs = star['omegaz'][sindx]
 omegaphis = -star['omegaphi'][sindx]
+probsjrs = probs_all[sindx]
 
 # set number of grid
 ngridx = 300
@@ -417,7 +464,7 @@ jzrange = np.array([0.0, 0.05])
 # 2D histogram 
 H, xedges, yedges = np.histogram2d(lzs, jzs, \
                     bins=(ngridx, ngridy), \
-                    range=(lzrange, jzrange))
+                    range=(lzrange, jzrange), weights=probsjrs)
 # set x-axis (lzs) is axis=1
 H = H.T
 # normalised by row
@@ -442,26 +489,25 @@ for i in range(ngridy):
 print('Lz-Jz Hmax =', np.max(H))
 
 # high Jz stars Lz distribution
-jzselmin = 0.005
-jzselmax = 0.0499
-jzselmin = 0.015
+jzselmin = 0.01
 jzselmax = 0.0499
 jzindx = np.where((jzs>jzselmin) & (jzs<jzselmax))
 print('jz range=', jzselmin, jzselmax, \
       ' N selected stars=', len(jzs[jzindx]))
 # for selected stars (positive rotation in clockwise)
 lzsels = lzs[jzindx]
+probs = probsjrs[jzindx]
 
 # KD
 hlz = 0.04
 nhist = 200
 lz_bins = np.linspace(lzrange[0], lzrange[1], nhist)
 kde = KernelDensity(kernel='epanechnikov', \
-                      bandwidth=hlz).fit(lzsels.reshape(-1, 1))
+                      bandwidth=hlz).fit(lzsels.reshape(-1, 1), sample_weight=probs)
 log_dens = kde.score_samples(lz_bins.reshape(-1, 1))
 # y range
 ymin_hist = 0.01
-ymax_hist = 1.75
+ymax_hist = 2.0
 
 # Final plot
 plt.rcParams["font.family"] = "Times New Roman"
@@ -528,9 +574,10 @@ f.subplots_adjust(left=0.15, bottom = 0.15, hspace=0.0, right = 0.9)
 #cb1 = f.colorbar(im1, cax=cbar_ax1)
 #cb1.ax.tick_params(labelsize=16)
 
-# plt.savefig('lzjz-sim.jpg')
-# plt.close(f)
-
-plt.show()
+if Paper==True:
+    plt.savefig('lzjz-sim.jpg')
+    plt.close(f)
+else:
+    plt.show()
 
 
