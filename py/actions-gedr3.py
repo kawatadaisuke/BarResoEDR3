@@ -25,18 +25,20 @@ from sklearn.neighbors import KernelDensity
 # flags
 Rweight = True
 # making eps and jpg file for figure without showing in windows.
-Paper = True
+Paper = False
 #
-OLRloc = 'Sirius'
-# OLRloc = 'Hat'
+# OLRloc = 'Sirius'
+OLRloc = 'Hat'
 
 # for not displaying
 if Paper==True:
     matplotlib.use('Agg')
 
 # circular velocity at rsun from MWPotential2014
-rsun = 8.0
-vcircsun = 220.0
+# Jason's assumed values
+rsun = 8.178
+vcircsun = 248.5-12.32
+print(' assumed Rsun and Vcirc(Rsun)=', rsun, vcircsun)
 
 # condition to select stars
 # |z| < zmaxlim
@@ -89,6 +91,7 @@ omegars = star['Omega_r'][sindx]*omega0
 omegazs = star['Omega_z'][sindx]*omega0
 omegaphis = star['Omega_p'][sindx]*omega0
 rgals = star['R'][sindx]
+dists = star['dist'][sindx]
 
 # compute the weights
 if Rweight==True:
@@ -165,14 +168,14 @@ print(' Hmax =', np.max(Hlog))
 # bar pattern speed
 if OLRloc=='Hat':
     # Hat OLR version
-    omega_b = 32.0
+    omega_b = 33.6
 elif OLRloc=='Sirius':
     # Sirius OLR version. 
-    omega_b = 40.0
+    omega_b = 42.0
 # Hercules OLR
 # omega_b = 50.0
 # omega range to use to identify resonances. 
-domega = 0.01
+domega = 0.05
 # nslim for fitting
 nslimfit = 10
 
@@ -256,7 +259,7 @@ else:
 mres = 1.0
 lres = 1.0
 indx11 = np.where(np.fabs(mres*(omega_b-omegaphis)-lres*omegars)<domega)
-print(' np 1:1=', np.shape(indx11))
+print(' np 1:1=', len(lzs[indx11]))
 if len(lzs[indx11])>nslimfit:
     # robust fit
     ransac_11 = linear_model.RANSACRegressor()
@@ -266,6 +269,7 @@ if len(lzs[indx11])>nslimfit:
     # Predict data of estimated models
     line_X11 = np.linspace(lzrange[0], lzrange[1],npline).reshape(-1,1)
     line_y11 = ransac_11.predict(line_X11)
+    print('1:1 line=', line_X11)
 else:
     line_X11 = np.linspace(lzrange[0], lzrange[1],npline).reshape(-1,1)
     line_y11 = np.zeros_like(line_X11)-1.0
@@ -296,56 +300,69 @@ plt.rcParams["font.size"] = 16
 # log plot
 cmin = nlogmin
 cmax = np.max(Hlog)
-f, (ax1) = plt.subplots(1, sharex = True, figsize=(6,4))
-labpos = np.array([5.0, 40.0])
-im1 = ax1.imshow(Hlog, interpolation='gaussian', origin='lower', \
+if Rweight==True:
+  npanel = 1
+  f, ax = plt.subplots(1, sharex = True, figsize=(6,4))
+  f.subplots_adjust(left=0.15, bottom = 0.15, hspace=0.0, right = 0.9)
+else:
+  npanel = 2
+  f, ax = plt.subplots(2, sharex = True, figsize=(6,6))
+  f.subplots_adjust(left=0.15, bottom = 0.05, hspace=0.0, right = 0.9)    
+
+for i in range(npanel):
+    if npanel==1:
+        axp = ax
+    else:
+        axp = ax[i]
+    im1 = axp.imshow(Hlog, interpolation='gaussian', origin='lower', \
         aspect='auto', vmin=cmin, vmax=cmax, \
         extent=[xedges[0], xedges[-1], \
                 yedges[0], yedges[-1]], \
                  cmap=cm.jet)
-ax1.set_xlim(xedges[0], xedges[-1])
-ax1.set_ylim(yedges[0], yedges[-1])
+    axp.set_xlim(xedges[0], xedges[-1])
+    axp.set_ylim(yedges[0], yedges[-1])
                  
-ax1.set_ylabel(r"J$_{\rm R}$ (L$_{\rm z,0}$)", fontsize=18)
-ax1.tick_params(labelsize=16, color='k', direction="in")
-# ax2.set_yticks(vrotticks)
-ax1.set_xticks([0.5, 1.0, 1.5])    
-
+    axp.set_ylabel(r"J$_{\rm R}$ (L$_{\rm z,0}$)", fontsize=18)
+    axp.tick_params(labelsize=16, color='k', direction="in")
+    # ax2.set_yticks(vrotticks)
+    axp.set_xticks([0.5, 1.0, 1.5])
+    if Rweight==True:    
+        # plot CR cyan
+        # plt.scatter(lzs[indxcr], jrs[indxcr], c='blue', marker='.',s=1)
+        axp.plot(line_Xcr, line_ycr, color='cyan')
+        # plot 4:1 orange
+        # plt.scatter(lzs[indx41], jrs[indx41], c='yellow', marker='.',s=1)
+        axp.plot(line_X41, line_y41, color='orange')
+        # plot OLR red
+        # plt.scatter(lzs[indxolr], jrs[indxolr], c='white', marker='.',s=1)
+        axp.plot(line_Xolr, line_yolr, color='red')
+        # plot 4:3 black
+        # plt.scatter(lzs[indx43], jrs[indx43], c='black', marker='o',s=1)
+        axp.plot(line_X43, line_y43, color='green')
+        # 4:-1
+        # plt.scatter(lzs[indxi41], jrs[indxi41], c='blue', marker='o',s=1)
+        axp.plot(line_Xi41, line_yi41, color='blue')
+        # 1:1
+        # plt.scatter(lzs[indx11], jrs[indx11], c='white', marker='o',s=1)
+        axp.plot(line_X11, line_y11, color='grey')
+    if i==1:
+        axp.scatter(lzs[(dists<0.1)], \
+                    jrs[(dists<0.1)], marker='o', color='white', s=0.05)
+    axp.grid(True)        
+        
 plt.xlabel(r"L$_{\rm z}$ (L$_{\rm z,0}$)", fontsize=18)
 # plt.ylabel(r"$J_{\rm R}$ ($L_{\rm z,0}$)", fontsize=18)
-
-# plot CR cyan
-# plt.scatter(lzs[indxcr], jrs[indxcr], c='blue', marker='.',s=1)
-plt.plot(line_Xcr, line_ycr, color='cyan')
-# plot 4:1 orange
-# plt.scatter(lzs[indx41], jrs[indx41], c='yellow', marker='.',s=1)
-plt.plot(line_X41, line_y41, color='orange')
-# plot OLR red
-# plt.scatter(lzs[indxolr], jrs[indxolr], c='white', marker='.',s=1)
-plt.plot(line_Xolr, line_yolr, color='red')
-# plot 4:3 black
-# plt.scatter(lzs[indx43], jrs[indx43], c='black', marker='o',s=1)
-plt.plot(line_X43, line_y43, color='green')
-# plot 1:1 white
-# plt.scatter(lzs[indx11], jrs[indx11], c='white', marker='o',s=1)
-# plt.plot(line_X11, line_y11, color='white')
-# 4:-1
-# plt.scatter(lzs[indxi41], jrs[indxi41], c='blue', marker='o',s=1)
-plt.plot(line_Xi41, line_yi41, color='blue')
-# 1:1
-# plt.scatter(lzs[indxi41], jrs[indxi41], c='blue', marker='o',s=1)
-plt.plot(line_X11, line_y11, color='grey')
 
 # identify the radial boundary
 # plt.scatter(lzs[rgals>11.9], jrs[rgals>11.9], c='white', marker='.',s=1)
 # plt.scatter(lzs[rgals<4.1], jrs[rgals<4.1], c='black', marker='.',s=1)
 
-f.subplots_adjust(left=0.15, bottom = 0.15, hspace=0.0, right = 0.9)
+
 #cbar_ax1 = f.add_axes([0.8, 0.15, 0.05, 0.725])
 #cb1 = f.colorbar(im1, cax=cbar_ax1)
 #cb1.ax.tick_params(labelsize=16)
 
-plt.grid(True)
+
 if Paper==True:
     if Rweight==True:
         if OLRloc=='Hat':
@@ -354,9 +371,9 @@ if Paper==True:
             plt.savefig('lzjr-gedr3-wRw-olrsir.eps')            
     else:
         if OLRloc=='Hat':
-            plt.savefig('lzjr-gedr3-woRw-olrhat.eps')
+            plt.savefig('lzjr-gedr3-woRw-olrhat.jpg')
         elif OLRloc=='Sirius':
-            plt.savefig('lzjr-gedr3-woRw-olrsir.eps')            
+            plt.savefig('lzjr-gedr3-woRw-olrsir.jpg')            
     plt.close(f)
 else:
     plt.show()
@@ -526,9 +543,9 @@ if Paper==True:
             plt.savefig('lzhist-gedr3-wRw-olrsir.eps')          
     else:
         if OLRloc=='Hat':
-            plt.savefig('lzhist-gedr3-woRw-olrhat.eps')
+            plt.savefig('lzhist-gedr3-woRw-olrhat.jpg')
         else:
-            plt.savefig('lzhist-gedr3-woRw-olrsir.eps')          
+            plt.savefig('lzhist-gedr3-woRw-olrsir.jpg')          
     plt.close(f)
 else:
     plt.show()
