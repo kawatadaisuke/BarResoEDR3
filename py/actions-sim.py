@@ -450,7 +450,7 @@ for i in range(njrsamp):
 plt.xlabel(r"L$_{\rm z}$ (L$_{\rm z,0}$)", fontsize=18)
 
 if Paper==True:
-    if Rweight=='True':
+    if Rweight==True:
         plt.savefig('lzhist-sim-wRw.eps')
     else:
         plt.savefig('lzhist-sim-woRw.eps')      
@@ -614,7 +614,7 @@ f.subplots_adjust(left=0.15, bottom = 0.15, hspace=0.0, right = 0.9)
 #cb1.ax.tick_params(labelsize=16)
 
 if Paper==True:
-    if Rweight=='True':
+    if Rweight==True:
         plt.savefig('lzjz-sim-wRw.jpg')
     else:
         plt.savefig('lzjz-sim-woRw.jpg')
