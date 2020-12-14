@@ -263,12 +263,12 @@ ax1.set_xlim(xedges[0], xedges[-1])
 ax1.set_ylim(yedges[0], yedges[-1])
 ax1.set_xticks([0.5, 1.0, 1.5])    
                  
-ax1.set_ylabel(r"J$_{\rm R}$ (L$_{\rm z,0}$)", fontsize=18)
+ax1.set_ylabel(r"J$_{\rm R}$ (L$_{\rm z,0}$)", fontsize=16)
 ax1.tick_params(labelsize=16, color='k', direction="in")
 # ax2.set_yticks(vrotticks)
 
-plt.xlabel(r"L$_{\rm z}$ (L$_{\rm z,0}$)", fontsize=18)
-# plt.ylabel(r"$J_{\rm R}$ ($L_{\rm z,0}$)", fontsize=18)
+plt.xlabel(r"L$_{\rm z}$ (L$_{\rm z,0}$)", fontsize=16)
+# plt.ylabel(r"$J_{\rm R}$ ($L_{\rm z,0}$)", fontsize=16)
 
 # plot CR cyan
 # plt.scatter(lzs[indxcr], jrs[indxcr], c='blue', marker='.',s=1)
@@ -327,7 +327,7 @@ ymax_hist = 1.2
 
 # f, ax = plt.subplots(njrsamp, sharex = True, figsize=(5,8))
 f, ax = plt.subplots(njrsamp, sharex = True, figsize=(5,5))
-f.subplots_adjust(hspace=0.0, bottom=0.15)
+f.subplots_adjust(hspace=0.0, bottom=0.15, left=0.2)
 # f.subplots_adjust(bottom = 0.15)
 
 jrnorm_all = star['Jr']/lz0
@@ -429,7 +429,7 @@ for i in range(njrsamp):
   print(' lz region for 1:1=', r11_low, r11_high)
   ax[i].add_patch(
     patches.Rectangle((r11_low, ymin_hist), r11_high-r11_low, \
-                      ymax_hist-ymin_hist, facecolor='blue', fill=True,alpha=0.5))
+                      ymax_hist-ymin_hist, facecolor='grey', fill=True,alpha=0.5))
   
 
   # histogram 
@@ -444,10 +444,14 @@ for i in range(njrsamp):
   ax[i].tick_params(labelsize=16, color='k', direction="in")
   ax[i].set_xlim(lzmin_hist, lzmax_hist)
   ax[i].set_ylim(ymin_hist, ymax_hist)
-  if i==njrsamp-1:
-      ax[i].set_xticks([0.5, 1.0, 1.5])    
+  if i==0:
+      ax[i].set_ylabel(r"dN($0.07<{\rm J}_{\rm R}<0.15$)", fontsize=14)
+  if i==1:
+      ax[i].set_ylabel(r"dN($0.01<{\rm J}_{\rm R}<0.02$)", fontsize=14)
+      ax[i].set_xticks([0.5, 1.0, 1.5])          
   
-plt.xlabel(r"L$_{\rm z}$ (L$_{\rm z,0}$)", fontsize=18)
+plt.xlabel(r"L$_{\rm z}$ (L$_{\rm z,0}$)", fontsize=16)
+
 
 if Paper==True:
     if Rweight==True:
@@ -563,6 +567,7 @@ ax1.plot(lz_bins, np.exp(log_dens), color='black')
 ax1.tick_params(labelsize=16, color='k', direction="in")
 ax1.set_xlim(lzrange[0], lzrange[1])
 ax1.set_ylim(ymin_hist, ymax_hist)
+ax1.set_ylabel(r"dN", fontsize=16)
 # add shaded region of resonances
 ax1.add_patch(
     patches.Rectangle((cr_low0, ymin_hist), cr_high0-cr_low0, \
@@ -578,16 +583,17 @@ ax1.add_patch(
                       ymax_hist-ymin_hist, facecolor='green', fill=True,alpha=0.5))
 ax1.add_patch(
     patches.Rectangle((ri41_low0, ymin_hist), ri41_high0-ri41_low0, \
-                      ymax_hist-ymin_hist, facecolor='green', fill=True,alpha=0.5))
+                      ymax_hist-ymin_hist, facecolor='blue', fill=True,alpha=0.5))
 ax1.add_patch(
     patches.Rectangle((r11_low0, ymin_hist), r11_high0-r11_low0, \
-                      ymax_hist-ymin_hist, facecolor='green', fill=True,alpha=0.5))
+                      ymax_hist-ymin_hist, facecolor='grey', fill=True,alpha=0.5))
 
 # Lz vs. Jz
 ax2.add_patch(
     patches.Rectangle((lzrange[0], jzselmin), \
                       lzrange[1]-lzrange[0], jzselmax-jzselmin, \
-                      facecolor='pink', fill=True,alpha=0.5))
+                      facecolor='pink', fill=True,alpha=0.3))
+
 #im1 = ax1.imshow(H, interpolation='gaussian', origin='lower', \
 im1 = ax2.imshow(Hlog, interpolation='gaussian', origin='lower', \
         aspect='auto', vmin=cmin, vmax=cmax, \
@@ -598,15 +604,15 @@ im1 = ax2.imshow(Hlog, interpolation='gaussian', origin='lower', \
 ax2.set_xlim(xedges[0], xedges[-1])
 ax2.set_ylim(yedges[0], yedges[-1])
                  
-ax2.set_ylabel(r"J$_{\rm z}$ (L$_{\rm z,0}$)", fontsize=18)
+ax2.set_ylabel(r"J$_{\rm z}$ (L$_{\rm z,0}$)", fontsize=16)
 ax2.tick_params(labelsize=16, color='k', direction="in")
 ax1.set_xticks([0.5, 1.0, 1.5])    
 # ax2.set_yticks(vrotticks)
 
 ax2.plot((lzrange[0],jzselmin),(lzrange[1],jzselmax), color='black')
 
-plt.xlabel(r"L$_{\rm z}$ (L$_{\rm z,0}$)", fontsize=18)
-# plt.ylabel(r"$J_{\rm R}$ ($L_{\rm z,0}$)", fontsize=18)
+plt.xlabel(r"L$_{\rm z}$ (L$_{\rm z,0}$)", fontsize=16)
+# plt.ylabel(r"$J_{\rm R}$ ($L_{\rm z,0}$)", fontsize=16)
 
 f.subplots_adjust(left=0.15, bottom = 0.15, hspace=0.0, right = 0.9)
 #cbar_ax1 = f.add_axes([0.8, 0.15, 0.05, 0.725])

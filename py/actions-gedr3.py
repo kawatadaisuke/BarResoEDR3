@@ -25,10 +25,10 @@ from sklearn.neighbors import KernelDensity
 # flags
 Rweight = True
 # making eps and jpg file for figure without showing in windows.
-Paper = False
+Paper = True
 #
-# OLRloc = 'Sirius'
-OLRloc = 'Hat'
+OLRloc = 'Sirius'
+# OLRloc = 'Hat'
 
 # for not displaying
 if Paper==True:
@@ -269,7 +269,7 @@ if len(lzs[indx11])>nslimfit:
     # Predict data of estimated models
     line_X11 = np.linspace(lzrange[0], lzrange[1],npline).reshape(-1,1)
     line_y11 = ransac_11.predict(line_X11)
-    print('1:1 line=', line_X11)
+    # print('1:1 line=', line_X11)
 else:
     line_X11 = np.linspace(lzrange[0], lzrange[1],npline).reshape(-1,1)
     line_y11 = np.zeros_like(line_X11)-1.0
@@ -307,7 +307,7 @@ if Rweight==True:
 else:
   npanel = 2
   f, ax = plt.subplots(2, sharex = True, figsize=(6,6))
-  f.subplots_adjust(left=0.15, bottom = 0.05, hspace=0.0, right = 0.9)    
+  f.subplots_adjust(left=0.15, bottom = 0.1, hspace=0.0, right = 0.9)    
 
 for i in range(npanel):
     if npanel==1:
@@ -322,10 +322,11 @@ for i in range(npanel):
     axp.set_xlim(xedges[0], xedges[-1])
     axp.set_ylim(yedges[0], yedges[-1])
                  
-    axp.set_ylabel(r"J$_{\rm R}$ (L$_{\rm z,0}$)", fontsize=18)
+    axp.set_ylabel(r"J$_{\rm R}$ (L$_{\rm z,0}$)", fontsize=16)
     axp.tick_params(labelsize=16, color='k', direction="in")
     # ax2.set_yticks(vrotticks)
     axp.set_xticks([0.5, 1.0, 1.5])
+    axp.set_yticks([0.0, 0.025, 0.05, 0.075, 0.1, 0.125])            
     if Rweight==True:    
         # plot CR cyan
         # plt.scatter(lzs[indxcr], jrs[indxcr], c='blue', marker='.',s=1)
@@ -345,13 +346,14 @@ for i in range(npanel):
         # 1:1
         # plt.scatter(lzs[indx11], jrs[indx11], c='white', marker='o',s=1)
         axp.plot(line_X11, line_y11, color='grey')
+
     if i==1:
         axp.scatter(lzs[(dists<0.1)], \
                     jrs[(dists<0.1)], marker='o', color='white', s=0.05)
     axp.grid(True)        
         
-plt.xlabel(r"L$_{\rm z}$ (L$_{\rm z,0}$)", fontsize=18)
-# plt.ylabel(r"$J_{\rm R}$ ($L_{\rm z,0}$)", fontsize=18)
+plt.xlabel(r"L$_{\rm z}$ (L$_{\rm z,0}$)", fontsize=16)
+# plt.ylabel(r"$J_{\rm R}$ ($L_{\rm z,0}$)", fontsize=16)
 
 # identify the radial boundary
 # plt.scatter(lzs[rgals>11.9], jrs[rgals>11.9], c='white', marker='.',s=1)
@@ -402,7 +404,7 @@ ymax_hist = 1.7
 
 #f, ax = plt.subplots(njrsamp, sharex = True, figsize=(5,8))
 f, ax = plt.subplots(njrsamp, sharex = True, figsize=(5,5))
-f.subplots_adjust(hspace=0.0, bottom=0.15)
+f.subplots_adjust(hspace=0.0, bottom=0.15, left=0.2)
 # f.subplots_adjust(bottom = 0.15)
 
 jrnorm_all = star['Jr']
@@ -531,9 +533,15 @@ for i in range(njrsamp):
   ax[i].set_xlim(lzmin_hist, lzmax_hist)
   ax[i].set_ylim(ymin_hist, ymax_hist)
   if i==njrsamp-1:
-      ax[i].set_xticks([0.5, 1.0, 1.5])  
+      ax[i].set_xticks([0.5, 1.0, 1.5])
+  if i==0:
+      ax[i].set_ylabel(r"dN($0.03<{\rm J}_{\rm R}<0.1$)", fontsize=14)
+  if i==1:
+      ax[i].set_ylabel(r"dN($0.01<{\rm J}_{\rm R}<0.02$)", fontsize=14)
+      ax[i].set_xticks([0.5, 1.0, 1.5])          
+       
   
-plt.xlabel(r"L$_{\rm z}$ (L$_{\rm z,0}$)", fontsize=18)
+plt.xlabel(r"L$_{\rm z}$ (L$_{\rm z,0}$)", fontsize=16)
 
 if Paper==True:
     if Rweight==True:
@@ -656,6 +664,7 @@ ax1.plot(lz_bins, np.exp(log_dens), color='black')
 ax1.tick_params(labelsize=16, color='k', direction="in")
 ax1.set_xlim(lzrange[0], lzrange[1])
 ax1.set_ylim(ymin_hist, ymax_hist)
+ax1.set_ylabel(r"dN", fontsize=16)
 # add shaded region of resonances
 ax1.add_patch(
     patches.Rectangle((cr_low0, ymin_hist), cr_high0-cr_low0, \
@@ -680,7 +689,7 @@ ax1.add_patch(
 ax2.add_patch(
     patches.Rectangle((lzrange[0], jzselmin), \
                       lzrange[1]-lzrange[0], jzselmax-jzselmin, \
-                      facecolor='pink', fill=True,alpha=0.5))
+                      facecolor='pink', fill=True,alpha=0.2))
 #im1 = ax1.imshow(H, interpolation='gaussian', origin='lower', \
 im1 = ax2.imshow(Hlog, interpolation='gaussian', origin='lower', \
         aspect='auto', vmin=cmin, vmax=cmax, \
@@ -692,13 +701,13 @@ im1 = ax2.imshow(Hlog, interpolation='gaussian', origin='lower', \
 ax2.set_xlim(xedges[0], xedges[-1])
 ax2.set_ylim(yedges[0], yedges[-1])
                  
-ax2.set_ylabel(r"J$_{\rm z}$ (L$_{\rm z,0}$)", fontsize=18)
+ax2.set_ylabel(r"J$_{\rm z}$ (L$_{\rm z,0}$)", fontsize=16)
 ax2.tick_params(labelsize=16, color='k', direction="in")
 # ax2.set_yticks(vrotticks)
 ax2.set_xticks([0.5, 1.0, 1.5])    
 
-plt.xlabel(r"L$_{\rm z}$ (L$_{\rm z,0}$)", fontsize=18)
-# plt.ylabel(r"$J_{\rm R}$ ($L_{\rm z,0}$)", fontsize=18)
+plt.xlabel(r"L$_{\rm z}$ (L$_{\rm z,0}$)", fontsize=16)
+# plt.ylabel(r"$J_{\rm R}$ ($L_{\rm z,0}$)", fontsize=16)
 
 f.subplots_adjust(left=0.15, bottom = 0.15, hspace=0.0, right = 0.9)
 #cbar_ax1 = f.add_axes([0.8, 0.15, 0.05, 0.725])
@@ -711,12 +720,12 @@ if Paper==True:
         if OLRloc=='Hat':
             plt.savefig('lzjz-gedr3-wRw-olrhat.jpg')
         elif OLRloc=='Sirius':
-            plt.savefig('lzjz-gedr3-wRw-olrhsir.jpg')
+            plt.savefig('lzjz-gedr3-wRw-olrsir.jpg')
     else:
         if OLRloc=='Hat':
             plt.savefig('lzjz-gedr3-woRw-olrhat.jpg')
         elif OLRloc=='Sirius':
-            plt.savefig('lzjz-gedr3-woRw-olrhsir.jpg')
+            plt.savefig('lzjz-gedr3-woRw-olrsir.jpg')
     plt.close(f)
 else:
     plt.show()

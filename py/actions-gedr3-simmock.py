@@ -26,11 +26,8 @@ from sklearn.neighbors import KernelDensity
 ##### main programme start here #####
 
 # flags
-# ob 
-# circular velocity at rsun from MWPotential2014
-rsun = 8.0
-zsun = 0.0
-vcircsun = 220.0
+
+print(' assumed zsun and vcirc=', rsun, vcircsun)
 
 # condition to select observed stars
 # |z| < zmaxlim
@@ -551,7 +548,6 @@ for i in range(njrsamp):
   if i==0:
     r11_low0 = r11_low
     r11_high0 = r11_high
-  
   print(' lz region for 1:1 =', r11_low, r11_high)
   ax[i].add_patch(
     patches.Rectangle((r11_low, ymin_hist), r11_high-r11_low, \
@@ -702,6 +698,9 @@ ax1.add_patch(
                       ymax_hist-ymin_hist, facecolor='green', fill=True,alpha=0.5))
 ax1.add_patch(
     patches.Rectangle((ri41_low0, ymin_hist), ri41_high0-ri41_low0, \
+                      ymax_hist-ymin_hist, facecolor='green', fill=True,alpha=0.5))
+ax1.add_patch(
+    patches.Rectangle((r11_low0, ymin_hist), r11_high0-r11_low0, \
                       ymax_hist-ymin_hist, facecolor='green', fill=True,alpha=0.5))
 
 # Lz vs. Jz
