@@ -24,8 +24,10 @@ from sklearn.neighbors import KernelDensity
 # flags
 # flags
 Rweight = True
+# Rweight = False
 # making eps and jpg file for figure without showing in windows.
 Paper = True
+# Paper = False
 #
 OLRloc = 'Sirius'
 # OLRloc = 'Hat'
@@ -48,7 +50,10 @@ lzlim = 0.001
 # jrlim
 jrlim = 0.3
 # omega
-omegalim = 4.0
+# 1st draft
+# omegalim = 4.0
+# 2nd draft, no omega cut
+omegalim = 40000.0
 # R range
 rgalmin = 4.0
 rgalmax = 12.0
@@ -146,6 +151,7 @@ H = H.T
 # normalised by row
 # print(' hist = ',np.shape(H))
 # print(' np row = ',np.sum(H, axis=1))
+
 # log value
 nlogmin = 0.5
 # nlogmin = -4.0
@@ -163,6 +169,27 @@ for i in range(ngridy):
 # print(' after normalised=',np.sum(H, axis=1))
 # print(' H=', H[ngridx-4, :])
 print(' Hmax =', np.max(Hlog))
+
+if Rweight==False:
+  # JR image excluding the data |R-Rsun|<0.2 kpc
+  rex = 0.2
+  # 2D histogram
+  Hrex, xedgesrex, yedgesrex = np.histogram2d(lzs[np.fabs(rgals-rsun)>rex], \
+                    jrs[np.fabs(rgals-rsun)>rex], \
+                    bins=(ngridx, ngridy), \
+                    range=(lzrange, jrrange), \
+                    weights=probs[np.fabs(rgals-rsun)>rex])
+  # set x-axis (lzs) is axis=1
+  Hrex = Hrex.T
+  Hlogrex = np.zeros_like(Hrex)
+  for i in range(ngridy):
+    nprow = np.sum(Hrex[i, :])
+    # if nprow >= nsmin:
+    #  H[i, :] /= nprow
+    # else:
+    #  H[i, :] = 0.0
+    Hlogrex[i, Hrex[i, :]<=nminlim]=nlogmin
+    Hlogrex[i, Hrex[i, :]>nminlim]=np.log10(Hrex[i, Hrex[i, :]>nminlim])
 
 # compute resonance location in action space
 # bar pattern speed
@@ -314,11 +341,19 @@ for i in range(npanel):
         axp = ax
     else:
         axp = ax[i]
-    im1 = axp.imshow(Hlog, interpolation='gaussian', origin='lower', \
+    if i==0:
+      im1 = axp.imshow(Hlog, interpolation='gaussian', origin='lower', \
         aspect='auto', vmin=cmin, vmax=cmax, \
         extent=[xedges[0], xedges[-1], \
                 yedges[0], yedges[-1]], \
                  cmap=cm.jet)
+    else:
+      im1 = axp.imshow(Hlogrex, interpolation='gaussian', origin='lower', \
+        aspect='auto', vmin=cmin, vmax=cmax, \
+        extent=[xedges[0], xedges[-1], \
+                yedges[0], yedges[-1]], \
+                 cmap=cm.jet)
+      
     axp.set_xlim(xedges[0], xedges[-1])
     axp.set_ylim(yedges[0], yedges[-1])
                  
@@ -347,9 +382,12 @@ for i in range(npanel):
         # plt.scatter(lzs[indx11], jrs[indx11], c='white', marker='o',s=1)
         axp.plot(line_X11, line_y11, color='grey')
 
-    if i==1:
-        axp.scatter(lzs[(dists<0.1)], \
-                    jrs[(dists<0.1)], marker='o', color='white', s=0.05)
+    # if i==1:
+        # 1st draft
+        # axp.scatter(lzs[(dists<0.1)], \
+        #            jrs[(dists<0.1)], marker='o', color='white', s=0.05)
+        # axp.scatter(lzs[(np.fabs(rgals-rsun)<0.1)], \
+        #            jrs[(np.fabs(rgals-rsun)<0.1)], marker='o', color='white', s=0.05)
     axp.grid(True)        
         
 plt.xlabel(r"L$_{\rm z}$ (L$_{\rm z,0}$)", fontsize=16)
@@ -368,9 +406,9 @@ plt.xlabel(r"L$_{\rm z}$ (L$_{\rm z,0}$)", fontsize=16)
 if Paper==True:
     if Rweight==True:
         if OLRloc=='Hat':
-            plt.savefig('lzjr-gedr3-wRw-olrhat.eps')
+            plt.savefig('lzjr-gedr3-wRw-olrhat.jpg')
         elif OLRloc=='Sirius':
-            plt.savefig('lzjr-gedr3-wRw-olrsir.eps')            
+            plt.savefig('lzjr-gedr3-wRw-olrsir.jpg')            
     else:
         if OLRloc=='Hat':
             plt.savefig('lzjr-gedr3-woRw-olrhat.jpg')
@@ -546,9 +584,9 @@ plt.xlabel(r"L$_{\rm z}$ (L$_{\rm z,0}$)", fontsize=16)
 if Paper==True:
     if Rweight==True:
         if OLRloc=='Hat':
-            plt.savefig('lzhist-gedr3-wRw-olrhat.eps')
+            plt.savefig('lzhist-gedr3-wRw-olrhat.jpg')
         else:
-            plt.savefig('lzhist-gedr3-wRw-olrsir.eps')          
+            plt.savefig('lzhist-gedr3-wRw-olrsir.jpg')          
     else:
         if OLRloc=='Hat':
             plt.savefig('lzhist-gedr3-woRw-olrhat.jpg')
