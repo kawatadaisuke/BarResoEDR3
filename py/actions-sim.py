@@ -23,9 +23,9 @@ from sklearn.neighbors import KernelDensity
 ##### main programme start here #####
 
 # flags
-Rweight = True
+Rweight = False
 # making eps and jpg file for figure without showing in windows.
-Paper = True
+Paper = False
 
 # for not displaying
 if Paper==True:
@@ -296,9 +296,9 @@ f.subplots_adjust(left=0.15, bottom = 0.15, hspace=0.0, right = 0.9)
 
 if Paper==True:
     if Rweight==True:
-        plt.savefig('lzjr-sim-wRw.eps')
+        plt.savefig('lzjr-sim-wRw.jpg')
     else:
-        plt.savefig('lzjr-sim-woRw.eps')        
+        plt.savefig('lzjr-sim-woRw.jpg')        
     plt.close(f)
 else:
     plt.show()
@@ -378,7 +378,7 @@ for i in range(njrsamp):
   if i==0:
       r41_low0 = r41_low
       r41_high0 = r41_high
-  print(' lz region for 4:1=', cr_low, cr_high)
+  print(' lz region for 4:1=', r41_low, r41_high)
   ax[i].add_patch(
     patches.Rectangle((r41_low, ymin_hist), r41_high-r41_low, \
                       ymax_hist-ymin_hist, facecolor='orange', fill=True,alpha=0.5))
