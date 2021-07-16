@@ -23,9 +23,9 @@ from sklearn.neighbors import KernelDensity
 ##### main programme start here #####
 
 # flags
-Rweight = False
+Rweight = True
 # making eps and jpg file for figure without showing in windows.
-Paper = False
+Paper = True
 
 # for not displaying
 if Paper==True:
@@ -87,7 +87,8 @@ rgals = star['R'][sindx]
 if Rweight==True:
     # R histogram
     rgalpres = star['R'][sindx]
-    nhist = 16
+    # nhist = 16
+    nhist = 64
     rgalhist, bin_edges = np.histogram(rgals, bins=nhist, \
                                        range=(rgalmin, rgalmax), density=True)
     rgal_bins = 0.5*(bin_edges[:nhist]+bin_edges[1:])
@@ -455,9 +456,9 @@ plt.xlabel(r"L$_{\rm z}$ (L$_{\rm z,0}$)", fontsize=16)
 
 if Paper==True:
     if Rweight==True:
-        plt.savefig('lzhist-sim-wRw.eps')
+        plt.savefig('lzhist-sim-wRw.jpg')
     else:
-        plt.savefig('lzhist-sim-woRw.eps')      
+        plt.savefig('lzhist-sim-woRw.jpg')      
     plt.close(f)
 else:
     plt.show()

@@ -26,20 +26,47 @@ from sklearn.neighbors import KernelDensity
 Rweight = True
 # Rweight = False
 # making eps and jpg file for figure without showing in windows.
-Paper = True
-# Paper = False
+# Paper = True
+Paper = False
 #
-OLRloc = 'Sirius'
-# OLRloc = 'Hat'
+# OLRloc = 'Sirius'
+OLRloc = 'Hat'
+#
+#
+# GalPot = 'MW14'
+GalPot = 'McMillan17'
+# GalPot = 'Irrgang13III'
 
 # for not displaying
 if Paper==True:
     matplotlib.use('Agg')
 
-# circular velocity at rsun from MWPotential2014
-# Jason's assumed values
-rsun = 8.178
-vcircsun = 248.5-12.32
+# default rsun and vcirc values used by Jason with MWPotential2014.
+rsun0jh = 8.178
+vcircsun0jh = 248.5-12.32
+lz0jh = rsun0jh*vcircsun0jh
+omega0jh = vcircsun0jh/rsun0jh
+print(' Default rsun and vcirc(rsun)=', rsun0jh, vcircsun0jh)
+print(' Lz0, Omega0=', lz0jh, omega0jh)
+
+if GalPot == 'MW14':
+  # circular velocity at rsun from MWPotential2014
+  # Jason's assumed values
+  rsun = 8.178
+  vcircsun = 248.5-12.32
+  print(' Use MWPotential2014')
+elif GalPot == 'McMillan17':
+# from https://docs.galpy.org/en/v1.5.0/reference/potential.html#potential-mw
+# use
+# from galpy.util.bovy_conversion import get_physical
+  rsun = 8.21
+  vcircsun = 233.1
+  print(' Use McMillan17')
+elif GalPot == 'Irrgang13III':
+  rsun = 8.33
+  vcircsun = 239.7
+  print(' Use Irrgang13III')  
+
 print(' assumed Rsun and Vcirc(Rsun)=', rsun, vcircsun)
 
 # condition to select stars
@@ -61,8 +88,15 @@ rgalmax = 12.0
 lz0 = rsun*vcircsun
 omega0 = vcircsun/rsun
 
+print(' Lz0, Omega0=', lz0, omega0)
+
 # read the simulation data
-infile = '../GaiaEDR3/actions_jashunt/eDR3_actions.fits'
+if GalPot == 'MW14':
+  infile = '../GaiaEDR3/actions_jashunt/eDR3_actions.fits'
+elif GalPot == 'McMillan17':
+  infile = '../GaiaEDR3/actions_jashunt/eDR3_actions-McMillan17.fits'
+elif GalPot == 'Irrgang13III':
+  infile = '../GaiaEDR3/actions_jashunt/eDR3_actions-Irrgang13III.fits'
 star_hdus = pyfits.open(infile)
 star = star_hdus[1].data
 star_hdus.close()
@@ -71,6 +105,16 @@ print(' number of input =', len(star['R']))
 
 # save radius data for all the input
 rgals_all = star['R']
+
+# normalising for McMillan17 and Irrgang13III
+if GalPot == 'McMillan17' or GalPot == 'Irrgang13III':
+  star['lz'] /= lz0
+  star['jR'] /= lz0
+  star['jz'] /= lz0
+  star['Omega_r'] /= omega0
+  star['Omega_p'] /= omega0
+  star['Omega_z'] /= omega0  
+
 
 # selection of stars
 sindx = np.where((np.fabs(star['z']) < zmaxlim) & \
@@ -102,7 +146,9 @@ dists = star['dist'][sindx]
 if Rweight==True:
     # R histogram
     rgalpres = star['R'][sindx]
+    # default nhist
     nhist = 64
+    # nhist = 256 # does not change the results
     rgalhist, bin_edges = np.histogram(rgals, bins=nhist, \
                                        range=(rgalmin, rgalmax), density=True)
     rgal_bins = 0.5*(bin_edges[:nhist]+bin_edges[1:])
@@ -195,16 +241,32 @@ if Rweight==False:
 # bar pattern speed
 if OLRloc=='Hat':
     # Hat OLR version
-    omega_b = 33.6
+    if GalPot == 'MW14':
+      omega_b = 33.6
+    elif GalPot == 'McMillan17':
+      omega_b = 35.5
+    elif GalPot == 'Irrgang13III':      
+      omega_b = 39.0
 elif OLRloc=='Sirius':
-    # Sirius OLR version. 
-    omega_b = 42.0
+    # Sirius OLR version.
+    if GalPot == 'MW14':
+      omega_b = 40.0
+    elif GalPot == 'McMillan17':
+      omega_b = 42.5
+    elif GalPot == 'Irrgang13III':      
+      omega_b = 45.5
 # Hercules OLR
 # omega_b = 50.0
-# omega range to use to identify resonances. 
-domega = 0.05
+# omega range to use to identify resonances.
+if GalPot == 'MW14':
+  domega = 0.05
+else:
+  domega = 0.05
 # nslim for fitting
 nslimfit = 10
+
+# adjust omegab
+# omega_b = (omega_b/omega0jh)*omega0
 
 print(' Omega Bar =', omega_b, omega_b/omega0,'Omega0')
 
@@ -428,6 +490,10 @@ njrsamp = 2
 
 jrsamp_low = np.array([0.03, 0.01])
 jrsamp_high = np.array([0.1, 0.02])
+# if  GalPot == 'Irrgang13III':
+#  jrsamp_low = np.array([0.05, 0.01])
+#  jrsamp_high = np.array([0.1, 0.02])
+
 
 # lzrange
 nhist = 200
@@ -439,6 +505,8 @@ lz_bins = np.linspace(lzmin_hist, lzmax_hist, nhist)
 # y range
 ymin_hist = 0.0
 ymax_hist = 1.7
+# for test
+ymax_hist = 2.0
 
 #f, ax = plt.subplots(njrsamp, sharex = True, figsize=(5,8))
 f, ax = plt.subplots(njrsamp, sharex = True, figsize=(5,5))
@@ -769,4 +837,62 @@ else:
     plt.show()
 
 
+if GalPot == 'McMillan17' or GalPot == 'Irrgang13III':
+  # plot only Lz distribution
+  plt.rcParams["font.family"] = "Times New Roman"
+  plt.rcParams["mathtext.fontset"] = "stixsans"
+  plt.rcParams["font.size"] = 16
+  # y range
+  ymin_hist = 0.0
+  ymax_hist = 2.4  
+  
+  npanel = 1
+  f, ax = plt.subplots(1, sharex = True, figsize=(6,4))
+  f.subplots_adjust(left=0.15, bottom = 0.15, hspace=0.0, right = 0.9)
+  
 
+  # KDE histogram
+  ax.plot(lz_bins, np.exp(log_dens), color='black')
+  ax.tick_params(labelsize=16, color='k', direction="in")
+  ax.set_xlim(lzrange[0], lzrange[1])
+  ax.set_ylim(ymin_hist, ymax_hist)
+  ax.set_ylabel(r"dN", fontsize=16)
+  # add shaded region of resonances
+  ax.add_patch(
+    patches.Rectangle((cr_low0, ymin_hist), cr_high0-cr_low0, \
+                      ymax_hist-ymin_hist, facecolor='cyan', fill=True,alpha=0.5))
+  ax.add_patch(
+    patches.Rectangle((r41_low0, ymin_hist), r41_high0-r41_low0, \
+                      ymax_hist-ymin_hist, facecolor='orange', fill=True,alpha=0.5))
+  ax.add_patch(
+    patches.Rectangle((olr_low0, ymin_hist), olr_high0-olr_low0, \
+                      ymax_hist-ymin_hist, facecolor='red', fill=True,alpha=0.5))
+  ax.add_patch(
+    patches.Rectangle((r43_low0, ymin_hist), r43_high0-r43_low0, \
+                      ymax_hist-ymin_hist, facecolor='green', fill=True,alpha=0.5))
+  ax.add_patch(
+    patches.Rectangle((ri41_low0, ymin_hist), ri41_high0-ri41_low0, \
+                      ymax_hist-ymin_hist, facecolor='blue', fill=True,alpha=0.5))
+  ax.add_patch(
+    patches.Rectangle((r11_low0, ymin_hist), r11_high0-r11_low0, \
+                      ymax_hist-ymin_hist, facecolor='grey', fill=True,alpha=0.5))
+  ax.set_xticks([0.5, 1.0, 1.5])    
+
+  plt.xlabel(r"L$_{\rm z}$ (L$_{\rm z,0}$)", fontsize=16)
+
+  if Rweight==True:  
+    if OLRloc=='Hat':  
+      filen = 'lzjz-gedr3-wRw-olrhat-'+GalPot+'.jpg'
+    elif OLRloc=='Sirius':  
+      filen = 'lzjz-gedr3-wRw-olrsir-'+GalPot+'.jpg'
+  else:
+    if OLRloc=='Hat':  
+      filen = 'lzjz-gedr3-woRw-olrhat-'+GalPot+'.jpg'
+    elif OLRloc=='Sirius':  
+      filen = 'lzjz-gedr3-woRw-olrsir-'+GalPot+'.jpg'    
+  print(filen)
+  plt.savefig(filen)
+  plt.close(f)
+  
+  # plt.show()
+  
